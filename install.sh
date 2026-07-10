@@ -61,14 +61,13 @@ npx wrangler login
 # Create KV Namespace on Cloudflare
 echo "📦 Creating KV Namespace..."
 KV_OUTPUT=$(npx wrangler kv:namespace create DRIVE_KV)
-echo "$KV_OUTPUT"
+    KV_ID=$(echo "$KV_OUTPUT" | grep -oE '"id": "[a-f0-9]{32}"|id = "[a-f0-9]{32}"' | grep -oE '[a-f0-9]{32}')
 
-KV_ID=$(echo "$KV_OUTPUT" | grep -oE "id = \"[a-f0-9]{32}\"" | cut -d'"' -f2)
+    if [ -z "$KV_ID" ]; then
+        echo "❌ Failed to create KV Namespace. Please create a KV Namespace named DRIVE_KV manually."
+        exit 1
+    fi
 
-if [ -z "$KV_ID" ]; then
-    echo "❌ Failed to create KV Namespace. Please create a KV Namespace named DRIVE_KV manually."
-    exit 1
-fi
 
 # Write wrangler.json
 cat <<EOF > wrangler.json
