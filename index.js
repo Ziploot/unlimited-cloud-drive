@@ -13,7 +13,68 @@ export default {
       });
     }
 
-    // Serve HTML Dashboard
+    // Helper to check authentication cookie
+    const checkAuth = (req) => {
+      const cookieHeader = req.headers.get("Cookie") || "";
+      const cookies = Object.fromEntries(cookieHeader.split(";").map(c => {
+        const parts = c.trim().split("=");
+        return [parts[0], parts.slice(1).join("=")];
+      }));
+      return cookies.drive_token === env.DRIVE_PASSWORD;
+    };
+
+    // Handle Login API
+    if (url.pathname === "/login" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        if (body.password === env.DRIVE_PASSWORD) {
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Set-Cookie": `drive_token=${body.password}; Path=/; HttpOnly; SameSite=Strict; Max-Age=2592000`,
+              "Access-Control-Allow-Origin": "*"
+            }
+          });
+        }
+        return new Response(JSON.stringify({ error: "Invalid password" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.toString() }), { status: 400 });
+      }
+    }
+
+    // Handle Logout API
+    if (url.pathname === "/logout") {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          "Location": "/",
+          "Set-Cookie": "drive_token=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"
+        }
+      });
+    }
+
+    // Authentication Gate
+    const authenticated = checkAuth(request);
+    if (!authenticated) {
+      if (url.pathname === "/" && request.method === "GET") {
+        return new Response(getHtmlLogin(), {
+          headers: { "Content-Type": "text/html; charset=utf-8" }
+        });
+      }
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
+      });
+    }
+
+    // Serve HTML Dashboard (only when authenticated)
     if (url.pathname === "/" && request.method === "GET") {
       return new Response(getHtmlDashboard(url.origin), {
         headers: { "Content-Type": "text/html; charset=utf-8" }
@@ -156,6 +217,180 @@ async function streamFileChunks(chunks, botToken, writable) {
   }
 }
 
+// Embedded HTML Login Portal
+function getHtmlLogin() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZipLoot Cloud - Secure Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Syne:wght@800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.06);
+      --primary: #818cf8;
+      --text: #cbd5e1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(129, 140, 248, 0.15) 0%, rgba(0,0,0,0) 70%);
+      top: -100px;
+      left: -100px;
+      z-index: 1;
+    }
+    body::after {
+      content: "";
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, rgba(0,0,0,0) 70%);
+      bottom: -150px;
+      right: -150px;
+      z-index: 1;
+    }
+    .login-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      z-index: 10;
+      position: relative;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #818cf8 0%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 30px;
+      letter-spacing: -0.5px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    p {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 25px;
+    }
+    .input-group {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
+    }
+    .error-msg {
+      color: #ef4444;
+      font-size: 13px;
+      margin-top: 15px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="logo">⚡ ZIPLOOT CLOUD</div>
+    <h2>Private Cloud Storage</h2>
+    <p>Please enter the access password to view files</p>
+    
+    <div class="input-group">
+      <input type="password" id="password" placeholder="Access Password" required />
+    </div>
+    
+    <button class="btn" id="loginBtn">Authorize Session</button>
+    <div class="error-msg" id="errorMsg">Incorrect password. Please try again.</div>
+  </div>
+
+  <script>
+    const passwordInput = document.getElementById("password");
+    const loginBtn = document.getElementById("loginBtn");
+    const errorMsg = document.getElementById("errorMsg");
+
+    const doLogin = async () => {
+      const password = passwordInput.value;
+      if (!password) return;
+      
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+      
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        errorMsg.style.display = "block";
+      }
+    };
+
+    loginBtn.onclick = doLogin;
+    passwordInput.onkeydown = (e) => {
+      if (e.key === "Enter") doLogin();
+    };
+  </script>
+</body>
+</html>`;
+}
+
 // Embedded Premium Dashboard HTML/CSS/JS UI
 function getHtmlDashboard(origin) {
   return `<!DOCTYPE html>
@@ -168,11 +403,13 @@ function getHtmlDashboard(origin) {
   <style>
     :root {
       --bg: #0b0f19;
-      --card-bg: rgba(255, 255, 255, 0.03);
-      --border: rgba(255, 255, 255, 0.06);
+      --card-bg: rgba(255, 255, 255, 0.02);
+      --border: rgba(255, 255, 255, 0.05);
       --primary: #818cf8;
+      --primary-hover: #6366f1;
       --success: #10b981;
       --text: #cbd5e1;
+      --text-muted: #64748b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -183,6 +420,29 @@ function getHtmlDashboard(origin) {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(129, 140, 248, 0.1) 0%, rgba(0,0,0,0) 70%);
+      top: -100px;
+      left: -100px;
+      z-index: 0;
+      pointer-events: none;
+    }
+    body::after {
+      content: "";
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.07) 0%, rgba(0,0,0,0) 70%);
+      bottom: -150px;
+      right: -150px;
+      z-index: 0;
+      pointer-events: none;
     }
     header {
       border-bottom: 1px solid var(--border);
@@ -191,7 +451,7 @@ function getHtmlDashboard(origin) {
       justify-content: space-between;
       align-items: center;
       background: rgba(11, 15, 25, 0.8);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -205,26 +465,51 @@ function getHtmlDashboard(origin) {
       -webkit-text-fill-color: transparent;
       letter-spacing: -0.5px;
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .logout-btn {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
     .container {
       max-width: 1200px;
       width: 100%;
       margin: 40px auto;
       padding: 0 20px;
       flex: 1;
+      z-index: 10;
     }
     .upload-zone {
-      border: 2px dashed rgba(129, 140, 248, 0.3);
+      border: 2px dashed rgba(129, 140, 248, 0.25);
       background: var(--card-bg);
-      border-radius: 16px;
-      padding: 40px;
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 50px 40px;
       text-align: center;
       cursor: pointer;
       transition: all 0.3s ease;
-      margin-bottom: 40px;
+      margin-bottom: 45px;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     }
     .upload-zone:hover {
       border-color: var(--primary);
-      background: rgba(129, 140, 248, 0.02);
+      background: rgba(129, 140, 248, 0.015);
+      box-shadow: 0 12px 35px rgba(129, 140, 248, 0.05);
     }
     .upload-zone h3 {
       font-family: 'Syne', sans-serif;
@@ -232,7 +517,7 @@ function getHtmlDashboard(origin) {
       margin-bottom: 8px;
       color: #fff;
     }
-    .upload-zone p { font-size: 14px; color: #64748b; }
+    .upload-zone p { font-size: 14px; color: var(--text-muted); }
     .progress-container {
       margin-top: 20px;
       display: none;
@@ -255,8 +540,10 @@ function getHtmlDashboard(origin) {
     .file-table-wrapper {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 20px;
       overflow: hidden;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
     }
     table {
       width: 100%;
@@ -267,10 +554,10 @@ function getHtmlDashboard(origin) {
     th {
       background: rgba(255, 255, 255, 0.01);
       font-family: 'Syne', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: #94a3b8;
+      color: var(--text-muted);
     }
     td { font-size: 14px; color: #cbd5e1; }
     tr:last-child td { border-bottom: none; }
@@ -291,19 +578,31 @@ function getHtmlDashboard(origin) {
       background: var(--primary);
       color: #fff;
     }
-    .btn-primary:hover { background: #6366f1; }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
     .btn-danger {
-      background: rgba(239, 68, 68, 0.1);
+      background: rgba(239, 68, 68, 0.08);
       color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.12);
       margin-left: 8px;
     }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.15);
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="logo">⚡ ZIPLOOT CLOUD</div>
+    <div class="header-actions">
+      <span style="font-size: 13px; color: var(--text-muted);">Secure Node Active</span>
+      <a href="/logout" class="logout-btn">Lock Drive</a>
+    </div>
   </header>
+  
   <div class="container">
     <div class="upload-zone" id="dropzone">
       <input type="file" id="fileinput" style="display: none;" />
@@ -312,7 +611,7 @@ function getHtmlDashboard(origin) {
       
       <div class="progress-container" id="progressContainer">
         <div style="display: flex; justify-content: space-between; font-size: 13px;">
-          <span id="fileName">Uploading...</span>
+          <span id="fileName" style="font-weight: 600;">Uploading...</span>
           <span id="progressText">0%</span>
         </div>
         <div class="progress-bar-wrapper">
@@ -356,6 +655,20 @@ function getHtmlDashboard(origin) {
       e.preventDefault();
       handleUpload(e.dataTransfer.files[0]);
     };
+
+    // Helper to get file type icons
+    function getFileIcon(fileName) {
+      const ext = fileName.split('.').pop().toLowerCase();
+      const icons = {
+        pdf: '📄', doc: '📝', docx: '📝', txt: '📝', md: '📝',
+        png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', webp: '🖼️', svg: '🖼️',
+        mp4: '🎥', mkv: '🎥', avi: '🎥', mov: '🎥', webm: '🎥',
+        mp3: '🎵', wav: '🎵', ogg: '🎵', flac: '🎵',
+        zip: '📦', rar: '📦', tar: '📦', gz: '📦', '7z': '📦',
+        js: '💻', html: '💻', css: '💻', py: '💻', json: '💻'
+      };
+      return icons[ext] || '💾';
+    }
 
     async function handleUpload(file) {
       if (!file) return;
@@ -414,13 +727,14 @@ function getHtmlDashboard(origin) {
 
     async function loadFiles() {
       const res = await fetch("/api/files");
+      if (!res.ok) return;
       const files = await res.json();
       fileList.innerHTML = "";
       
       files.forEach(file => {
         const row = document.createElement("tr");
         row.innerHTML = \`
-          <td>\${file.name}</td>
+          <td><span style="font-size: 18px; margin-right: 10px;">\${getFileIcon(file.name)}</span> \${file.name}</td>
           <td>\${(file.size / (1024 * 1024)).toFixed(2)} MB</td>
           <td>\${new Date(file.date).toLocaleDateString()}</td>
           <td>
@@ -430,7 +744,6 @@ function getHtmlDashboard(origin) {
         \`;
         fileList.appendChild(row);
       });
-
     }
 
     async function deleteFile(key) {
