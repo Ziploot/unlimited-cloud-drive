@@ -419,17 +419,18 @@ function getHtmlDashboard(origin) {
       
       files.forEach(file => {
         const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${file.name}</td>
-          <td>${(file.size / (1024 * 1024)).toFixed(2)} MB</td>
-          <td>${new Date(file.date).toLocaleDateString()}</td>
+        row.innerHTML = \`
+          <td>\${file.name}</td>
+          <td>\${(file.size / (1024 * 1024)).toFixed(2)} MB</td>
+          <td>\${new Date(file.date).toLocaleDateString()}</td>
           <td>
-            <a href="/api/download/${file.key}" class="btn btn-primary">Download</a>
-            <button class="btn btn-danger" onclick="deleteFile('${file.key}')">Delete</button>
+            <a href="/api/download/\${file.key}" class="btn btn-primary">Download</a>
+            <button class="btn btn-danger" onclick="deleteFile('\${file.key}')">Delete</button>
           </td>
-        `;
+        \`;
         fileList.appendChild(row);
       });
+
     }
 
     async function deleteFile(key) {
