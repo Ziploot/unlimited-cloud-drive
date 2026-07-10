@@ -1,6 +1,6 @@
 # ⚡ Unlimited Serverless Cloud Drive on Cloudflare Workers
 
-Build a personal, secure, and 100% free Google Drive clone with unlimited storage using Telegram API as the backend and Cloudflare Workers as the serverless gateway.
+Build a personal, secure, and 100% free Google Drive clone with unlimited storage using Telegram API as the backend and Cloudflare Workers as the serverless gateway. Now fully secured with an Access Password Gate and a premium glassmorphic UI.
 
 ## 🚀 1-Click Auto-Installer (Windows, Linux, macOS)
 
