@@ -1391,10 +1391,10 @@ function getHtmlDashboard(origin) {
       if (currentFolderId) {
         const folder = folders.find(f => f.key === currentFolderId);
         if (folder) {
-          subcontainer.innerHTML = `
+          subcontainer.innerHTML = \`
             <span class="breadcrumb-separator">/</span>
-            <span class="breadcrumb-item active">${folder.name}</span>
-          `;
+            <span class="breadcrumb-item active">\${folder.name}</span>
+          \`;
         }
       }
     }
