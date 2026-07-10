@@ -16,6 +16,11 @@ while [ -z "$TG_CHAT_ID" ]; do
     read -p "[INPUT] Enter your Telegram Chat/Channel ID (e.g. -100123456789): " TG_CHAT_ID
 done
 
+DRIVE_PASSWORD=""
+while [ -z "$DRIVE_PASSWORD" ]; do
+    read -p "[INPUT] Create an Access Password to secure your drive portal: " DRIVE_PASSWORD
+done
+
 SUBDOMAIN=""
 while [ -z "$SUBDOMAIN" ]; do
     read -p "[INPUT] Enter your Cloudflare workers.dev subdomain (e.g. 'ziploot'): " SUBDOMAIN_INPUT
@@ -91,8 +96,6 @@ if [ -z "$KV_ID" ]; then
     exit 1
 fi
 
-
-
 # Write wrangler.json
 cat <<EOF > wrangler.json
 {
@@ -111,6 +114,7 @@ EOF
 echo "🔒 Saving Telegram secrets securely in Cloudflare..."
 echo "$TG_TOKEN" | npx wrangler secret put TELEGRAM_TOKEN
 echo "$TG_CHAT_ID" | npx wrangler secret put TELEGRAM_CHAT_ID
+echo "$DRIVE_PASSWORD" | npx wrangler secret put DRIVE_PASSWORD
 
 echo "🚀 Deploying Cloud Drive to Cloudflare Workers..."
 npx wrangler deploy
