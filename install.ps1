@@ -76,13 +76,14 @@ try {
     Write-Host $kvOutput
 
     # Parse KV Namespace ID
-    $kvIdMatch = [regex]::Match($kvOutput, 'id\s*=\s*"([a-f0-9]{32})"')
+    $kvIdMatch = [regex]::Match($kvOutput, '"?id"?\s*[:=]\s*"([a-f0-9]{32})"')
     if (-not $kvIdMatch.Success) {
         Write-Host "[ERROR] Failed to auto-create or parse KV Namespace. Please create a KV Namespace named DRIVE_KV manually." -ForegroundColor Red
         Read-Host "Press Enter to exit..."
         Exit
     }
     $kvId = $kvIdMatch.Groups[1].Value
+
 
     # Write customized wrangler.json with KV Namespace ID
     $wranglerJsonContent = @"
@@ -110,9 +111,9 @@ try {
     $driveUrl = "https://unlimited-cloud-drive.$subdomain.workers.dev"
     Write-Host "`n[SUCCESS] Congratulations! Your Unlimited Private Cloud Drive is live!" -ForegroundColor Green
     Write-Host "--------------------------------------------------------" -ForegroundColor Green
-    Write-Host "🔗 Cloud Drive Access URL: $driveUrl" -ForegroundColor Cyan
+    Write-Host "[LINK] Cloud Drive Access URL: $driveUrl" -ForegroundColor Cyan
     Write-Host "--------------------------------------------------------" -ForegroundColor Green
-    Write-Host "`n📁 Local Project Folder created at: $projectFolder" -ForegroundColor Yellow
+    Write-Host "`n[FOLDER] Local Project Folder created at: $projectFolder" -ForegroundColor Yellow
     Read-Host "`nSetup completed. Press Enter to exit..."
 } catch {
     Write-Host "[ERROR] An unexpected error occurred: $_" -ForegroundColor Red
