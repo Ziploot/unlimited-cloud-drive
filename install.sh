@@ -58,15 +58,39 @@ npm install
 echo "🔑 Logging in to Cloudflare..."
 npx wrangler login
 
-# Create KV Namespace on Cloudflare
+# Create KV Namespace on Cloudflare (redirect stderr to stdout)
 echo "📦 Creating KV Namespace..."
-KV_OUTPUT=$(npx wrangler kv:namespace create DRIVE_KV)
-    KV_ID=$(echo "$KV_OUTPUT" | grep -oE '"id": "[a-f0-9]{32}"|id = "[a-f0-9]{32}"' | grep -oE '[a-f0-9]{32}')
+KV_OUTPUT=$(npx wrangler kv:namespace create DRIVE_KV 2>&1)
+echo "$KV_OUTPUT"
 
-    if [ -z "$KV_ID" ]; then
-        echo "❌ Failed to create KV Namespace. Please create a KV Namespace named DRIVE_KV manually."
-        exit 1
+KV_ID=$(echo "$KV_OUTPUT" | grep -oE '"id": "[a-f0-9]{32}"|id = "[a-f0-9]{32}"' | grep -oE '[a-f0-9]{32}')
+
+if [ -z "$KV_ID" ]; then
+    if [[ "$KV_OUTPUT" == *"already exists"* ]] || [[ "$KV_OUTPUT" == *"10014"* ]]; then
+        echo "ℹ️ Namespace already exists. Fetching existing namespace ID..."
+        KV_LIST=$(npx wrangler kv:namespace list 2>&1)
+        # Try to parse KV_LIST with node
+        KV_ID=$(echo "$KV_LIST" | node -e '
+            try {
+                const fs = require("fs");
+                const data = JSON.parse(fs.readFileSync(0, "utf-8"));
+                const ns = data.find(x => x.title.includes("DRIVE_KV"));
+                if (ns) console.log(ns.id);
+            } catch(e) {}
+        ' 2>/dev/null)
+        
+        # Fallback regex search on list output
+        if [ -z "$KV_ID" ]; then
+            KV_ID=$(echo "$KV_LIST" | grep -B 1 "DRIVE_KV" | grep -oE '[a-f0-9]{32}' | head -n 1)
+        fi
     fi
+fi
+
+if [ -z "$KV_ID" ]; then
+    echo "❌ Failed to create or parse KV Namespace. Please create a KV Namespace named DRIVE_KV manually."
+    exit 1
+fi
+
 
 
 # Write wrangler.json
