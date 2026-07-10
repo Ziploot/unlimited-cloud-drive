@@ -1237,7 +1237,7 @@ function getHtmlDashboard(origin) {
 
     async function deleteFolder(folderKey) {
       if (confirm("Are you sure you want to delete this folder? (Files inside will be moved to Root)")) {
-        const res = await fetch(`/api/delete-folder/${folderKey}`, { method: "DELETE" });
+        const res = await fetch(\`/api/delete-folder/\${folderKey}\`, { method: "DELETE" });
         if (res.ok) {
           await fetchFolders();
           await fetchFiles();
@@ -1324,24 +1324,24 @@ function getHtmlDashboard(origin) {
       const category = getFileCategory(file.name);
 
       if (category === "images") {
-        body.innerHTML = `
-          <img src="/api/download/${file.key}" class="preview-image" alt="${file.name}" />
-        `;
+        body.innerHTML = \`
+          <img src="/api/download/\${file.key}" class="preview-image" alt="\${file.name}" />
+        \`;
       } else if (category === "videos") {
-        body.innerHTML = `
+        body.innerHTML = \`
           <video controls autoplay class="preview-video">
-            <source src="/api/download/${file.key}" type="${file.type || 'video/mp4'}">
+            <source src="/api/download/\${file.key}" type="\${file.type || 'video/mp4'}">
             Your browser does not support the video tag.
           </video>
-        `;
+        \`;
       } else {
-        body.innerHTML = `
+        body.innerHTML = \`
           <div class="preview-fallback">
-            <div style="font-size: 60px; margin-bottom: 15px;">${getFileIcon(file.name)}</div>
+            <div style="font-size: 60px; margin-bottom: 15px;">\${getFileIcon(file.name)}</div>
             <p style="margin-bottom: 15px; color: #cbd5e1;">Preview not available for this file type.</p>
-            <a href="/api/download/${file.key}" class="btn-action btn-action-primary">Download to Device</a>
+            <a href="/api/download/\${file.key}" class="btn-action btn-action-primary">Download to Device</a>
           </div>
-        `;
+        \`;
       }
 
       modal.classList.add("active");
@@ -1422,16 +1422,16 @@ function getHtmlDashboard(origin) {
           const count = files.filter(f => f.folderId === folder.key).length;
           const card = document.createElement("div");
           card.className = "folder-card";
-          card.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 15px; width: 100%; min-width: 0;" onclick="navigateToFolder('${folder.key}')">
+          card.innerHTML = \`
+            <div style="display: flex; align-items: center; gap: 15px; width: 100%; min-width: 0;" onclick="navigateToFolder('\${folder.key}')">
               <div class="folder-icon">📁</div>
               <div class="folder-info" style="flex: 1;">
-                <div class="folder-name">${folder.name}</div>
-                <div class="folder-files-count">${count} files</div>
+                <div class="folder-name">\${folder.name}</div>
+                <div class="folder-files-count">\${count} files</div>
               </div>
             </div>
-            <button class="btn-action btn-action-danger" style="padding: 6px 10px; border-radius: 8px;" onclick="deleteFolder('${folder.key}')">&times;</button>
-          `;
+            <button class="btn-action btn-action-danger" style="padding: 6px 10px; border-radius: 8px;" onclick="deleteFolder('\${folder.key}')">&times;</button>
+          \`;
           folderGrid.appendChild(card);
         });
       } else {
@@ -1481,7 +1481,7 @@ function getHtmlDashboard(origin) {
 
       fileList.innerHTML = "";
       if (filteredFiles.length === 0) {
-        fileList.innerHTML = `
+        fileList.innerHTML = \`
           <tr>
             <td colspan="4">
               <div class="empty-state">
@@ -1490,26 +1490,26 @@ function getHtmlDashboard(origin) {
               </div>
             </td>
           </tr>
-        `;
+\`;
       } else {
         filteredFiles.forEach(file => {
           const row = document.createElement("tr");
-          row.innerHTML = `
+          row.innerHTML = \`
             <td>
-              <div class="file-name-cell" onclick="openPreview('${file.key}')">
-                <div class="file-type-icon">${getFileIcon(file.name)}</div>
-                <span>${file.name}</span>
+              <div class="file-name-cell" onclick="openPreview('\${file.key}')">
+                <div class="file-type-icon">\${getFileIcon(file.name)}</div>
+                <span>\${file.name}</span>
               </div>
             </td>
-            <td>${(file.size / (1024 * 1024)).toFixed(2)} MB</td>
-            <td>${new Date(file.date).toLocaleDateString()}</td>
+            <td>\${(file.size / (1024 * 1024)).toFixed(2)} MB</td>
+            <td>\${new Date(file.date).toLocaleDateString()}</td>
             <td>
               <div class="action-btn-group">
-                <a href="/api/download/${file.key}" class="btn-action btn-action-primary">Download</a>
-                <button class="btn-action btn-action-danger" onclick="deleteFile('${file.key}')">Delete</button>
+                <a href="/api/download/\${file.key}" class="btn-action btn-action-primary">Download</a>
+                <button class="btn-action btn-action-danger" onclick="deleteFile('\${file.key}')">Delete</button>
               </div>
             </td>
-          `;
+          \`;
           fileList.appendChild(row);
         });
       }
