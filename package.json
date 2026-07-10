@@ -1,0 +1,12 @@
+{
+  "name": "unlimited-cloud-drive",
+  "version": "1.0.0",
+  "description": "Infinite Cloud Storage Serverless Drive using Telegram API Chunks",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "wrangler": "^3.114.17"
+  }
+}
