@@ -70,19 +70,46 @@ try {
     Write-Host "[LOGIN] Logging in to Cloudflare..." -ForegroundColor Cyan
     cmd.exe /c "npx wrangler login"
 
-    # Create KV Namespace on Cloudflare
+    # Create KV Namespace on Cloudflare (redirect stderr to stdout to catch error details)
     Write-Host "[KV] Creating Cloudflare KV Namespace..." -ForegroundColor Cyan
-    $kvOutput = cmd.exe /c "npx wrangler kv:namespace create DRIVE_KV"
+    $kvOutput = cmd.exe /c "npx wrangler kv:namespace create DRIVE_KV 2>&1"
     Write-Host $kvOutput
 
     # Parse KV Namespace ID
     $kvIdMatch = [regex]::Match($kvOutput, '"?id"?\s*[:=]\s*"([a-f0-9]{32})"')
-    if (-not $kvIdMatch.Success) {
+    $kvId = ""
+    if ($kvIdMatch.Success) {
+        $kvId = $kvIdMatch.Groups[1].Value
+    } else {
+        # Check if already exists (error code 10014 or text match)
+        if ($kvOutput -match "already exists" -or $kvOutput -match "10014") {
+            Write-Host "[KV] Namespace already exists. Fetching existing namespace ID..." -ForegroundColor Cyan
+            $kvListOutput = cmd.exe /c "npx wrangler kv:namespace list 2>&1"
+            # Parse list JSON
+            try {
+                $namespaces = ConvertFrom-Json $kvListOutput
+                foreach ($ns in $namespaces) {
+                    if ($ns.title -match "DRIVE_KV") {
+                        $kvId = $ns.id
+                        break
+                    }
+                }
+            } catch {
+                # Fallback to regex match on list output
+                $nsMatch = [regex]::Match($kvListOutput, '"id"\s*:\s*"([a-f0-9]{32})"[^}]+DRIVE_KV')
+                if ($nsMatch.Success) {
+                    $kvId = $nsMatch.Groups[1].Value
+                }
+            }
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($kvId)) {
         Write-Host "[ERROR] Failed to auto-create or parse KV Namespace. Please create a KV Namespace named DRIVE_KV manually." -ForegroundColor Red
         Read-Host "Press Enter to exit..."
         Exit
     }
-    $kvId = $kvIdMatch.Groups[1].Value
+
 
 
     # Write customized wrangler.json with KV Namespace ID
