@@ -19,6 +19,11 @@ try {
         $tgChatId = Read-Host "[INPUT] Enter your Telegram Chat/Channel ID (e.g. -100123456789)"
     }
 
+    $drivePassword = ""
+    while ([string]::IsNullOrWhiteSpace($drivePassword)) {
+        $drivePassword = Read-Host "[INPUT] Create an Access Password to secure your drive portal"
+    }
+
     $subdomain = ""
     while ([string]::IsNullOrWhiteSpace($subdomain)) {
         $subdomainInput = Read-Host "[INPUT] Enter your Cloudflare workers.dev subdomain (e.g. 'ziploot')"
@@ -110,8 +115,6 @@ try {
         Exit
     }
 
-
-
     # Write customized wrangler.json with KV Namespace ID
     $wranglerJsonContent = @"
 {
@@ -131,6 +134,7 @@ try {
     Write-Host "[SECURE] Saving Telegram secrets securely in Cloudflare..." -ForegroundColor Cyan
     cmd.exe /c "echo $tgToken | npx wrangler secret put TELEGRAM_TOKEN"
     cmd.exe /c "echo $tgChatId | npx wrangler secret put TELEGRAM_CHAT_ID"
+    cmd.exe /c "echo $drivePassword | npx wrangler secret put DRIVE_PASSWORD"
 
     Write-Host "[DEPLOY] Deploying Cloud Drive to Cloudflare Workers..." -ForegroundColor Cyan
     cmd.exe /c "npx wrangler deploy"
