@@ -435,7 +435,7 @@ function getHtmlDashboard(origin) {
 
     async function deleteFile(key) {
       if (confirm("Are you sure you want to delete this file?")) {
-        await fetch(`/api/delete/${key}`, { method: "DELETE" });
+        await fetch(\`/api/delete/\${key}\`, { method: "DELETE" });
         loadFiles();
       }
     }
